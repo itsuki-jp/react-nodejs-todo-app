@@ -1,8 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { closePool, query } from './db.js';
 
 import type {Request, Response} from 'express';
+
+interface Todo {
+  id: number;
+  title: string;
+  completed: boolean;
+  createdAt: Date;
+}
 
 dotenv.config();
 
@@ -16,19 +24,38 @@ app.use(cors({
 }
 ));
 
-const todos = [
- { id: 1, title: 'Reactを勉強する', completed: true, createdAt: new Date() },
- { id: 2, title: 'Node.jsを勉強する', completed: true, createdAt: new Date() },
- { id: 3, title: 'ToDoアプリを作る', completed: false, createdAt: new Date() },
-];
+const handleServerError = (
+  res: Response,
+  err: unknown,
+  message = 'サーバーエラー',
+): void => {
+  console.error(err);
+  res.status(500).json({ error: message });
+};
 
-app.get('/api/todos', (req: Request, res: Response) => {
- res.json(todos);
+app.get('/api/todos', async (req: Request, res: Response) => {
+  try {
+    const sql =
+      'SELECT id, title, completed, created_at AS createdAt FROM todos ORDER BY createdAt DESC';
+    const rows = await query<Todo>(sql);
+
+    res.status(200).json(rows);
+  } catch (err) {
+    handleServerError(res, err);
+  }
 });
 
 app.use((req: Request, res: Response) => {
  res.status(404).set('Content-Type', 'text/html; charset=utf-8');
  res.send('<h1>ページが見つかりませんでした。</h1>');
+});
+
+['SIGINT', 'SIGTERM', 'SIGHUP'].forEach((signal) => {
+  process.on(signal, async () => {
+    console.log(`\n${signal}を受信。アプリケーションの終了処理中...`);
+    await closePool();
+    process.exit();
+  });
 });
 
 app.listen(port, () => {
