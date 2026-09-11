@@ -1,5 +1,4 @@
-import { useState } from "react";
-
+import { useEffect,useState } from "react";
 interface Todo {
   id: number;
   title: string;
@@ -7,17 +6,36 @@ interface Todo {
   createdAt: Date;
 }
 
-const initialTodos: Todo[] = [
-  { id: 1, title: 'Reactを勉強する', completed: true, createdAt: new Date() },
-  { id: 2, title: 'Node.jsを勉強する', completed: true, createdAt: new Date() },
-  { id: 3, title: 'ToDoアプリを作る', completed: false, createdAt: new Date() },
-];
-
 export const App = () => {
-  const [todos] = useState<Todo[]>(initialTodos);
+  const [todos,setTodos] = useState<Todo[]>([]);
+  const apiUrl = import.meta.env.VITE_API_URL;
 
-  return (
-    <>
+  const fetchTodos = async () => {
+        const res = await fetch(`${apiUrl}/todos`);
+
+    if (!res.ok) throw new Error('ToDo一覧の取得に失敗しました。');
+
+    return res.json();
+  };
+
+  const syncTodos = async () => {
+    const todos = await fetchTodos();
+    setTodos(todos);
+  };
+
+  useEffect(() => {
+    const initApp = async () => {
+      try {
+        await syncTodos();
+      } catch (error) {
+        alert((error as Error).message);
+      }
+    };
+    initApp();
+  }, []);
+
+  return(
+        <>
       <h2>ToDo一覧</h2>
 
       <ul>
@@ -30,5 +48,5 @@ export const App = () => {
         ))}
       </ul>
     </>
-  );
+  )
 };
