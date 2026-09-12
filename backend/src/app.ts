@@ -20,7 +20,7 @@ const app = express();
 
 app.use(cors({
     origin: 'http://localhost:5173',
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST', 'PUT']
 }
 ));
 app.use(express.json());
@@ -32,6 +32,18 @@ const handleServerError = (
 ): void => {
   console.error(err);
   res.status(500).json({ error: message });
+};
+
+const validateTitle = (value: unknown): string | null => {
+  if (typeof value !== 'string' || !value.trim()) {
+    return 'ToDoを入力してください。';
+  }
+
+  if (value.trim().length > 50) {
+    return 'ToDoは50文字以内で入力してください。';
+  }
+
+  return null;
 };
 
 app.get('/api/todos', async (req: Request, res: Response) => {
@@ -47,25 +59,60 @@ app.get('/api/todos', async (req: Request, res: Response) => {
 });
 
 app.post('/api/todos', async (req: Request, res: Response) => {
-  const { title } = req.body as { title?: unknown };
+  const body = (req.body ?? {}) as { title?: unknown };
+  const { title } = body;
 
-  if (typeof title !== 'string' || !title.trim()) {
-    res.status(400).json({ error: 'ToDoを入力してください。' });
+  const titleError = validateTitle(title);
+  if (titleError) {
+    res.status(400).json({ error: titleError });
     return;
   }
 
-  if (title.trim().length > 50) {
-    res.status(400).json({ error: 'ToDoは50文字以内で入力してください。' });
-    return;
-  }
+  const trimmedTitle = (title as string).trim();
 
   try {
     const sql =
       'INSERT INTO todos (title, completed, created_at) VALUES (?, ?, ?)';
-    const params = [title.trim(), false, new Date()];
+    const params = [trimmedTitle, false, new Date()];
 
     await exec(sql, params);
     res.status(201).json({ message: 'ToDoを追加しました。' });
+  } catch (err) {
+    handleServerError(res, err);
+  }
+});
+
+app.put('/api/todos/:id', async (req: Request, res: Response) => {
+  const body = (req.body ?? {}) as {
+    title?: unknown;
+    completed?: unknown;
+  };
+  const { title, completed } = body;
+
+  const titleError = validateTitle(title);
+  if (titleError) {
+    res.status(400).json({ error: titleError });
+    return;
+  }
+
+  if (typeof completed !== 'boolean') {
+    res.status(400).json({ error: 'completedは真偽値で指定してください。' });
+    return;
+  }
+
+  const trimmedTitle = (title as string).trim();
+
+  try {
+    const sql = 'UPDATE todos SET title = ?, completed = ? WHERE id = ?';
+    const params = [trimmedTitle, completed, req.params.id];
+    const result = await exec(sql, params);
+
+    if (result.affectedRows === 0) {
+      res.status(404).json({ error: '指定されたToDoが見つかりません。' });
+      return;
+    }
+
+    res.status(200).json({ message: 'ToDoを更新しました。' });
   } catch (err) {
     handleServerError(res, err);
   }

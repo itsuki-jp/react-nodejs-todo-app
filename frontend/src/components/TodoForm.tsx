@@ -4,10 +4,16 @@ import type { SubmitEvent } from "react";
 
 type Props = {
   onSubmit: (title: string) => void | Promise<void>;
+  initialTitle?: string;
+  submitLabel?: string;
 };
 
-export const TodoForm = ({ onSubmit }: Props) => {
-  const [title, setTitle] = useState("");
+export const TodoForm = ({
+  onSubmit,
+  initialTitle = "",
+  submitLabel = "追加",
+}: Props) => {
+  const [title, setTitle] = useState(initialTitle);
   const [error, setError] = useState("");
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
@@ -40,7 +46,7 @@ export const TodoForm = ({ onSubmit }: Props) => {
         placeholder="ToDoを入力"
         maxLength={50}
       />
-      <button type="submit">追加</button>
+      <button type="submit">{submitLabel}</button>
     </form>
   );
 };
