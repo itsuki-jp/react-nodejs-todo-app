@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
-import type { RowDataPacket } from 'mysql2/promise';
+import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 dotenv.config();
 
@@ -31,6 +31,19 @@ export const query = async <T = RowDataPacket[]>(
   try {
     const [rows] = await pool.execute<RowDataPacket[]>(sql, params as never[]);
     return rows as T[];
+  } catch (err) {
+    console.error('SQLの実行中にエラーが発生しました：', err);
+    throw err;
+  }
+};
+
+export const exec = async (
+  sql: string,
+  params: unknown[] = [],
+): Promise<ResultSetHeader> => {
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(sql, params as never[]);
+    return result;
   } catch (err) {
     console.error('SQLの実行中にエラーが発生しました：', err);
     throw err;

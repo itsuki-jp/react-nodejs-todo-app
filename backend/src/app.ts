@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { closePool, query } from './db.js';
+import { closePool, exec, query } from './db.js';
 
 import type {Request, Response} from 'express';
 
@@ -20,9 +20,10 @@ const app = express();
 
 app.use(cors({
     origin: 'http://localhost:5173',
-    methods:['GET']
+    methods: ['GET', 'POST']
 }
 ));
+app.use(express.json());
 
 const handleServerError = (
   res: Response,
@@ -40,6 +41,31 @@ app.get('/api/todos', async (req: Request, res: Response) => {
     const rows = await query<Todo>(sql);
 
     res.status(200).json(rows);
+  } catch (err) {
+    handleServerError(res, err);
+  }
+});
+
+app.post('/api/todos', async (req: Request, res: Response) => {
+  const { title } = req.body as { title?: unknown };
+
+  if (typeof title !== 'string' || !title.trim()) {
+    res.status(400).json({ error: 'ToDoを入力してください。' });
+    return;
+  }
+
+  if (title.trim().length > 50) {
+    res.status(400).json({ error: 'ToDoは50文字以内で入力してください。' });
+    return;
+  }
+
+  try {
+    const sql =
+      'INSERT INTO todos (title, completed, created_at) VALUES (?, ?, ?)';
+    const params = [title.trim(), false, new Date()];
+
+    await exec(sql, params);
+    res.status(201).json({ message: 'ToDoを追加しました。' });
   } catch (err) {
     handleServerError(res, err);
   }

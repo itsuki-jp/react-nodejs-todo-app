@@ -1,4 +1,5 @@
 import { useEffect,useState } from "react";
+import { TodoForm } from './components/TodoForm';
 interface Todo {
   id: number;
   title: string;
@@ -23,6 +24,16 @@ export const App = () => {
     setTodos(todos);
   };
 
+  const addTodo = async (title: string) => {
+    const res = await fetch(`${apiUrl}/todos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    });
+
+    if (!res.ok) throw new Error('ToDoの追加に失敗しました。');
+  };
+
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -34,9 +45,20 @@ export const App = () => {
     initApp();
   }, []);
 
+  const handleSubmit = async (title: string) => {
+    try {
+      await addTodo(title);
+      await syncTodos();
+    } catch (error) {
+      alert((error as Error).message);
+    }
+  };
+
   return(
         <>
       <h2>ToDo一覧</h2>
+
+      <TodoForm onSubmit={handleSubmit} />
 
       <ul>
         {todos.map((todo) => (
