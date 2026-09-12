@@ -20,7 +20,7 @@ const app = express();
 
 app.use(cors({
     origin: 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT']
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
 }
 ));
 app.use(express.json());
@@ -113,6 +113,23 @@ app.put('/api/todos/:id', async (req: Request, res: Response) => {
     }
 
     res.status(200).json({ message: 'ToDoを更新しました。' });
+  } catch (err) {
+    handleServerError(res, err);
+  }
+});
+
+app.delete('/api/todos/:id', async (req: Request, res: Response) => {
+  try {
+    const sql = 'DELETE FROM todos WHERE id = ?';
+    const params = [req.params.id];
+    const result = await exec(sql, params);
+
+    if (result.affectedRows === 0) {
+      res.status(404).json({ error: '指定されたToDoが見つかりません。' });
+      return;
+    }
+
+    res.status(200).json({ message: 'ToDoを削除しました。' });
   } catch (err) {
     handleServerError(res, err);
   }

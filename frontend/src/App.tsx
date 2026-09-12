@@ -45,6 +45,14 @@ export const App = () => {
     if (!res.ok) throw new Error("ToDoの更新に失敗しました。");
   };
 
+  const deleteTodo = async (id: number) => {
+    const res = await fetch(`${apiUrl}/todos/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) throw new Error("ToDoの削除に失敗しました。");
+  };
+
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -110,6 +118,15 @@ export const App = () => {
                   {todo.completed ? "✅" : "☐"}
                 </button>
                 <button onClick={() => setEditingId(todo.id)}>編集</button>
+                <button onClick={async () => {
+                  if (!confirm("本当に削除しますか？")) return;
+                  try {
+                    await deleteTodo(todo.id);
+                    await syncTodos();
+                  } catch (error) {
+                    alert((error as Error).message);
+                  }
+                }}>削除</button>
               </>
             )}
           </li>
