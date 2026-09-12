@@ -7,6 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
+    "ensure-db": "node scripts/ensure-db.js",
+    "db:up": "node scripts/ensure-db.js",
+    "db:stop": "node scripts/stop-db.js",
+    "predev": "node scripts/ensure-db.js",
     "dev": "run-p dev:frontend dev:backend"
   },
   "keywords": [],
