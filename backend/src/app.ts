@@ -1,8 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import { closePool } from './db.js';
 import todoRoutes from './routes/todo.js';
+import authRoutes from './routes/auth.js';
 
 import type { Request, Response } from 'express';
 
@@ -13,14 +15,18 @@ const port = Number(process.env.PORT) || 3000;
 const app = express();
 
 app.use(cors({
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
-}
-));
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 // ToDoのCRUD機能を担当する各ルートを読み込む
 app.use('/api/todos', todoRoutes);
+
+// 認証機能を担当する各ルートを読み込む
+app.use('/api/auth', authRoutes);
 
 app.use((req: Request, res: Response) => {
  res.status(404).set('Content-Type', 'text/html; charset=utf-8');
