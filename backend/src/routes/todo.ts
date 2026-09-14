@@ -10,6 +10,10 @@ interface Todo {
   createdAt: Date;
 }
 
+interface TodoRow extends Omit<Todo, 'completed'> {
+  completed: boolean | number;
+}
+
 const router = Router();
 
 const handleServerError = (
@@ -38,9 +42,13 @@ router.get('/', async (_req: Request, res: Response) => {
   try {
     const sql =
       'SELECT id, title, completed, created_at AS createdAt FROM todos ORDER BY createdAt DESC';
-    const rows = await query<Todo>(sql);
+    const rows = await query<TodoRow>(sql);
+    const todos: Todo[] = rows.map((todo) => ({
+      ...todo,
+      completed: Boolean(todo.completed),
+    }));
 
-    res.status(200).json(rows);
+    res.status(200).json(todos);
   } catch (err) {
     handleServerError(res, err);
   }
