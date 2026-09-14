@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { TodoForm } from "./components/TodoForm";
+import { addTodo, deleteTodo, fetchTodos, updateTodo } from "./api/todo";
 interface Todo {
   id: number;
   title: string;
@@ -10,47 +11,9 @@ interface Todo {
 export const App = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const apiUrl = import.meta.env.VITE_API_URL;
-
-  const fetchTodos = async () => {
-    const res = await fetch(`${apiUrl}/todos`);
-
-    if (!res.ok) throw new Error("ToDo一覧の取得に失敗しました。");
-
-    return res.json();
-  };
-
   const syncTodos = async () => {
     const todos = await fetchTodos();
     setTodos(todos);
-  };
-
-  const addTodo = async (title: string) => {
-    const res = await fetch(`${apiUrl}/todos`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
-    });
-
-    if (!res.ok) throw new Error("ToDoの追加に失敗しました。");
-  };
-
-  const updateTodo = async (id: number, title: string, completed: boolean) => {
-    const res = await fetch(`${apiUrl}/todos/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, completed }),
-    });
-
-    if (!res.ok) throw new Error("ToDoの更新に失敗しました。");
-  };
-
-  const deleteTodo = async (id: number) => {
-    const res = await fetch(`${apiUrl}/todos/${id}`, {
-      method: "DELETE",
-    });
-
-    if (!res.ok) throw new Error("ToDoの削除に失敗しました。");
   };
 
   useEffect(() => {
