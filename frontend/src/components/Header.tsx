@@ -1,3 +1,5 @@
+import { LogIn, LogOut, UserPlus } from "lucide-react";
+
 type Props = {
   isLoggedIn: boolean;
   onClickLogout: () => void | Promise<void>;
@@ -19,19 +21,22 @@ export const Header = ({
         {isLoggedIn ? (
           <li>
             <button type="button" onClick={() => void onClickLogout()}>
-              ログアウト
+              <LogOut />
+              <span>ログアウト</span>
             </button>
           </li>
         ) : (
           <>
             <li>
               <button type="button" onClick={onClickLogin}>
-                ログイン
+                <LogIn />
+                <span>ログイン</span>
               </button>
             </li>
             <li>
               <button type="button" onClick={onClickRegister}>
-                会員登録
+                <UserPlus />
+                <span>会員登録</span>
               </button>
             </li>
           </>
