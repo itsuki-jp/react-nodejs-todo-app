@@ -38,11 +38,12 @@ const validateTitle = (value: unknown): string | null => {
 };
 
 // ToDoの全データを返すルート
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const sql =
-      'SELECT id, title, completed, created_at AS createdAt FROM todos ORDER BY createdAt DESC';
-    const rows = await query<TodoRow>(sql);
+      'SELECT id, title, completed, created_at AS createdAt FROM todos WHERE user_id = ? ORDER BY createdAt DESC';
+    const params = [(req as any).user.id];
+    const rows = await query<TodoRow>(sql, params);
     const todos: Todo[] = rows.map((todo) => ({
       ...todo,
       completed: Boolean(todo.completed),
@@ -69,8 +70,8 @@ router.post('/', async (req: Request, res: Response) => {
 
   try {
     const sql =
-      'INSERT INTO todos (title, completed, created_at) VALUES (?, ?, ?)';
-    const params = [trimmedTitle, false, new Date()];
+      'INSERT INTO todos (title, completed, created_at, user_id) VALUES (?, ?, ?, ?)';
+    const params = [trimmedTitle, false, new Date(), (req as any).user.id];
 
     await exec(sql, params);
     res.status(201).json({ message: 'ToDoを追加しました。' });
@@ -101,8 +102,14 @@ router.put('/:id', async (req: Request, res: Response) => {
   const trimmedTitle = (title as string).trim();
 
   try {
-    const sql = 'UPDATE todos SET title = ?, completed = ? WHERE id = ?';
-    const params = [trimmedTitle, completed, req.params.id];
+    const sql =
+      'UPDATE todos SET title = ?, completed = ? WHERE id = ? AND user_id = ?';
+    const params = [
+      trimmedTitle,
+      completed,
+      req.params.id,
+      (req as any).user.id,
+    ];
     const result = await exec(sql, params);
 
     if (result.affectedRows === 0) {
@@ -119,8 +126,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 // ToDoを削除するルート
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const sql = 'DELETE FROM todos WHERE id = ?';
-    const params = [req.params.id];
+    const sql = 'DELETE FROM todos WHERE id = ? AND user_id = ?';
+    const params = [req.params.id, (req as any).user.id];
     const result = await exec(sql, params);
 
     if (result.affectedRows === 0) {
