@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { closePool } from './db.js';
 import todoRoutes from './routes/todo.js';
 import authRoutes from './routes/auth.js';
+import { verifyToken } from './jwt.js';
 
 import type { Request, Response } from 'express';
 
@@ -23,7 +24,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ToDoのCRUD機能を担当する各ルートを読み込む
-app.use('/api/todos', todoRoutes);
+app.use('/api/todos', verifyToken, todoRoutes);
 
 // 認証機能を担当する各ルートを読み込む
 app.use('/api/auth', authRoutes);
