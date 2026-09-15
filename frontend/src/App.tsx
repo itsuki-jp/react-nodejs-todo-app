@@ -17,6 +17,7 @@ interface Todo {
   title: string;
   completed: boolean;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export const App = () => {
@@ -129,6 +130,9 @@ export const App = () => {
                           <strong className="todo-title">{todo.title}</strong>
                           <span className="todo-created-at">
                             作成日時: {new Date(todo.createdAt).toLocaleString("ja-JP")}
+                          </span>
+                          <span className="todo-updated-at">
+                            更新日時: {new Date(todo.updatedAt).toLocaleString("ja-JP")}
                           </span>
                         </div>
                         <div className="todo-btns">

@@ -8,6 +8,7 @@ interface Todo {
   title: string;
   completed: boolean;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 interface TodoRow extends Omit<Todo, 'completed'> {
@@ -41,7 +42,7 @@ const validateTitle = (value: unknown): string | null => {
 router.get('/', async (req: Request, res: Response) => {
   try {
     const sql =
-      'SELECT id, title, completed, created_at AS createdAt FROM todos WHERE user_id = ? ORDER BY createdAt DESC';
+      'SELECT id, title, completed, created_at AS createdAt, updated_at AS updatedAt FROM todos WHERE user_id = ? ORDER BY createdAt DESC';
     const params = [(req as any).user.id];
     const rows = await query<TodoRow>(sql, params);
     const todos: Todo[] = rows.map((todo) => ({

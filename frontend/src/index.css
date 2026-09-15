@@ -261,10 +261,15 @@ form button[type="submit"]:hover {
   font-weight: 600;
 }
 
-.todo-created-at {
+.todo-created-at,
+.todo-updated-at {
   margin-top: 0.5rem;
   color: var(--c-text-muted);
   font-size: 0.85rem;
+}
+
+.todo-updated-at {
+  margin-top: 0.2rem;
 }
 
 .todo-edit-form-wrapper {
