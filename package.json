@@ -11,7 +11,9 @@
     "db:up": "node scripts/ensure-db.js",
     "db:stop": "node scripts/stop-db.js",
     "predev": "node scripts/ensure-db.js",
-    "dev": "run-p dev:frontend dev:backend"
+    "dev": "run-p dev:frontend dev:backend",
+    "heroku-postbuild": "npm install --include=dev --prefix frontend && npm run build --prefix frontend && npm install --include=dev --prefix backend && npm run build --prefix backend",
+    "start": "node backend/dist/app.js"
   },
   "keywords": [],
   "author": "",
