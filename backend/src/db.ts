@@ -1,9 +1,16 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import fs from 'node:fs';
 
 import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 dotenv.config();
+
+const caFile = process.env.DB_SSL_CA_FILE;
+
+if (process.env.NODE_ENV === 'production' && !caFile) {
+  throw new Error('本番環境ではDB_SSL_CA_FILEが必要です。');
+}
 
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
@@ -11,6 +18,14 @@ const dbConfig = {
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'react_nodejs_todo_app',
+  ...(caFile
+    ? {
+        ssl: {
+          ca: fs.readFileSync(caFile, 'utf8'),
+          rejectUnauthorized: true,
+        },
+      }
+    : {}),
 };
 
 const pool = mysql.createPool(dbConfig);

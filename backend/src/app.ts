@@ -14,6 +14,7 @@ import type { Request, Response } from 'express';
 dotenv.config();
 
 const port = Number(process.env.PORT) || 3000;
+const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
 const frontUrl = process.env.FRONT_URL ?? 'http://localhost:5173';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,6 +55,6 @@ app.use((req: Request, res: Response) => {
   });
 });
 
-app.listen(port, () => {
+app.listen(port, host, () => {
  console.log(`Webサーバーが起動しました。`);
 });
