@@ -225,9 +225,9 @@ node -e "process.stdout.write(require('node:crypto').randomBytes(48).toString('b
 
 ## 5. Aivenへの接続制限
 
-Renderのサービス詳細で`Connect` → `Outbound`を開くと、そのRenderサービスの送信元IP rangeを確認できます。Aiven側でTrusted Sources/接続元制限を設定する場合は、公開後のRenderサービスの実際のOutbound rangesを使います。Render Freeに専用固定IPがあるとは想定しないでください。許可範囲の入力が必要な場合でも、インターネット全体を許可するCIDRを安易に設定せず、Aiven側の現在のアクセス制御仕様を確認します。
+Renderのサービス詳細で`Connect` → `Outbound`を開くと、そのRenderサービスの送信元IP rangeを確認できます。Aiven側でTrusted Sources/接続元制限を設定する場合は、公開後のRenderサービスの実際のOutbound rangesを使います。Renderの通常Outbound rangesは同じregion内の複数サービスで共有されます。サービス専用Dedicated IPは有料workspace planと追加料金が必要なので、このFree構成では使いません。Aivenの`ip_filter`には対象Render regionのCIDRだけを登録し、`0.0.0.0/0`や`::/0`を残さないようにします。
 
-接続は必ずTLSを有効にし、AivenのCAを検証します。`rejectUnauthorized: false`にして接続エラーを回避しないでください。
+MySQL接続はTLSを有効にし、AivenのCAを検証します。Aiven MySQLではTLSを使用しても、CA検証を明示しないとサーバー証明書の信頼性確認が省かれる場合があります。`rejectUnauthorized: false`にして接続エラーを回避しないでください。Aiven project CAは定期的にローテーションされるため、Render Secret Fileも更新します。
 
 ## 6. 初回デプロイの確認
 

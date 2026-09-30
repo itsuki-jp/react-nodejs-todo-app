@@ -36,15 +36,33 @@ TERAKOYA「18章 Herokuにアプリをデプロイしよう」と「ToDoアプ�
 9. stage対象は `backend/src/app.ts`、`backend/src/db.ts`、`RENDER_DEPLOYMENT_PLAN.md`、`RENDER_AIVEN_DEPLOYMENT_GUIDE.md`、`DEPLOYMENT_RUNBOOK.md` の5件のみ。既存の未追跡Markdown 2件はstageしていない。commit対象とstage内容の一致を確認済み。
 10. private repoの作成と初回push完了。commit `0dde843` を `origin/main` へpush。GitHub repo visibilityはPRIVATE。
 11. Render MCPのcreate要求は`.git`あり/なし双方のURLでHTTP 400 `invalid or unfetchable`となり、serviceは作られなかった。Render公式資料に従い、Render GitHub AppのRepository accessに対象private repoを加える必要があると判断。権限変更前に対象repoのみの許可画面を確認し、ユーザー承認を得る。
+12. GitHubのRender Appはアカウントにインストール済みだが、設定変更前にGitHub sudo re-authenticationを要求された。passkey/authenticator/passwordのいずれかが必要なため、認証入力・scope変更前に停止。ユーザーが再認証した後、Repository accessを `Only select repositories` + `react-nodejs-todo-app` のみとして保存する。
+
+### 参照した現行の公式資料
+
+- [Render: Git provider connection and GitHub App repository access](https://render.com/docs/git-provider)
+- [Render: Outbound IP addresses](https://render.com/docs/outbound-ip-addresses)
+- [Render: Environment variables and secret files](https://render.com/docs/configure-environment-variables)
+- [Aiven: MySQL service users and granular privileges](https://aiven.io/docs/products/mysql/howto/manage-service-users)
+- [Aiven: MySQL network and advanced parameters](https://aiven.io/docs/products/mysql/reference/advanced-params)
+- [Aiven: TLS/SSL certificates and CA rotation](https://aiven.io/docs/platform/concepts/tls-ssl-certificates)
 
 ### 次に実行する手順
 
 1. 対象ファイルだけを秘密情報スキャンし、stage対象を確定する。
 2. private GitHub repoを作成し、対象ファイルをstage/commit/pushする。push後にrepoのvisibilityを再確認する（完了）。
-3. Render GitHub Appが対象private repoを読めるように、Repository accessをこのrepoのみに限定して接続する。Render Web Serviceを作成し、Build=`npm run heroku-postbuild`、Start=`npm start`、region/network情報を記録する。
+3. ユーザーがGitHub再認証を完了した後、Render GitHub AppのRepository accessをこのrepoのみに設定する。Render Web Serviceを作成し、Build=`npm run heroku-postbuild`、Start=`npm start`、region/network情報を記録する。
 4. Render serviceのOutbound CIDRを取得し、Aiven MySQLの `ip_filter` をそのCIDRに絞る。適用後の値を読み返す。
 5. AivenのDB・アプリ専用user・権限を準備し、Renderの環境変数/CA Secret Fileへ秘密値を登録する。秘密値自体はこの記録に残さない。
 6. deploy後にbuild/log、HTTPS画面、auth、ToDo CRUD、ユーザー間分離、DB/TLS疎通を検証し、結果を逐次追記する。
+
+### 2026-09-30 再認証待ち
+
+- GitHubの `https://github.com/settings/installations/30423517` がsudo re-authenticationを要求。画面上の選択肢はpasskey、GitHub Mobile、authenticator app、password。資格情報の入力はユーザーに引き継ぐ。
+- Render GitHub Appの権限追加はまだ保存していない。再認証後に対象repoだけを選び、他repoのアクセスは許可しない。
+- Renderのprivate repo取得はこの権限設定まで保留。DB作成、Aiven network変更、Render deploy/env登録も未実施。
+- 再開後は[Render git provider設定](https://render.com/docs/git-provider)のRepository accessを確認し、通常Outbound CIDR（region内共有）をAiven `ip_filter`へ設定する。Free構成では有料Dedicated IPを作成しない。
+- Aiven project CAをTLS接続で検証する。CA rotationを含む[公式TLS資料](https://aiven.io/docs/platform/concepts/tls-ssl-certificates)を確認した。
 
 ## 更新履歴
 
