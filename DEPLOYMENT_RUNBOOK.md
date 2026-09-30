@@ -8,7 +8,7 @@ TERAKOYA「18章 Herokuにアプリをデプロイしよう」と「ToDoアプ�
 
 - Gitルート: `projects/samurai-github/react-nodejs-todo-app`（このディレクトリ単体をprivate GitHub repoにする）
 - 秘密値はGit、Markdown、コマンド出力、テストログに書かない。Renderの環境変数とSecret Fileへ設定する。
-- `backend/aa.md` と `frontend/src/components/phone-comparison-muse.md` は既存の未追跡ファイル。今回のstage対象から除外する。
+- `backend/src/aa.md` と `frontend/src/components/phone-comparison-muse.md` は既存の未追跡ファイル。今回のstage対象から除外する。
 - DBは既存Aiven MySQL `mysql-6e03204` を使う。Renderは既存サービスを流用せず、このアプリ用Web Serviceを作る。
 - 外部アカウントの変更は、本記録に実施内容と結果を追記してから行う。
 
@@ -35,8 +35,9 @@ TERAKOYA「18章 Herokuにアプリをデプロイしよう」と「ToDoアプ�
 8. GitHubに `itsuki-jp/react-nodejs-todo-app` をprivateで作成し、remote `origin` を設定。GitHub API readbackでvisibility=`PRIVATE`を確認。
 9. stage対象は `backend/src/app.ts`、`backend/src/db.ts`、`RENDER_DEPLOYMENT_PLAN.md`、`RENDER_AIVEN_DEPLOYMENT_GUIDE.md`、`DEPLOYMENT_RUNBOOK.md` の5件のみ。既存の未追跡Markdown 2件はstageしていない。commit対象とstage内容の一致を確認済み。
 10. private repoの作成と初回push完了。commit `0dde843` を `origin/main` へpush。GitHub repo visibilityはPRIVATE。
-11. Render MCPのcreate要求は`.git`あり/なし双方のURLでHTTP 400 `invalid or unfetchable`となり、serviceは作られなかった。Render公式資料に従い、Render GitHub AppのRepository accessに対象private repoを加える必要があると判断。権限変更前に対象repoのみの許可画面を確認し、ユーザー承認を得る。
-12. GitHubのRender Appはアカウントにインストール済みだが、設定変更前にGitHub sudo re-authenticationを要求された。passkey/authenticator/passwordのいずれかが必要なため、認証入力・scope変更前に停止。ユーザーが再認証した後、Repository accessを `Only select repositories` + `react-nodejs-todo-app` のみとして保存する。
+11. Render MCPのcreate要求は`.git`あり/なし双方のURLでHTTP 400 `invalid or unfetchable`となり、serviceは作られなかった。これはGitHub Appの接続状態を調べるきっかけになったが、権限不足が原因と確定したわけではない。
+12. GitHub Render AppのRepository accessを読み取り確認し、`All repositories` が選択済みでSaveは無効（未変更）だった。ユーザーから再認証済みとの報告もあり、権限設定を再度求めない。
+13. Render Account SettingsのGit Deployment Credentials欄には登録済みcredentialが表示されていなかった。ただし、今回のDashboard画像はOverview画面であり、その設定状態は画像からは確認できない。MCP経由でprivate repoを再取得できるか試す。
 
 ### 参照した現行の公式資料
 
@@ -51,18 +52,20 @@ TERAKOYA「18章 Herokuにアプリをデプロイしよう」と「ToDoアプ�
 
 1. 対象ファイルだけを秘密情報スキャンし、stage対象を確定する。
 2. private GitHub repoを作成し、対象ファイルをstage/commit/pushする。push後にrepoのvisibilityを再確認する（完了）。
-3. ユーザーがGitHub再認証を完了した後、Render GitHub AppのRepository accessをこのrepoのみに設定する。Render Web Serviceを作成し、Build=`npm run heroku-postbuild`、Start=`npm start`、region/network情報を記録する。
+3. Render MCPでprivate repoへのアクセスを再確認する。接続できたらRender Web Serviceを作成し、Build=`npm run heroku-postbuild`、Start=`npm start`、region/network情報を記録する。接続できない場合は、失敗内容を調べ、既に済んだGitHub Appの再認証を要求しない。
 4. Render serviceのOutbound CIDRを取得し、Aiven MySQLの `ip_filter` をそのCIDRに絞る。適用後の値を読み返す。
 5. AivenのDB・アプリ専用user・権限を準備し、Renderの環境変数/CA Secret Fileへ秘密値を登録する。秘密値自体はこの記録に残さない。
 6. deploy後にbuild/log、HTTPS画面、auth、ToDo CRUD、ユーザー間分離、DB/TLS疎通を検証し、結果を逐次追記する。
 
-### 2026-09-30 再認証待ち
+### 2026-09-30 接続確認の続き
 
 - GitHubの `https://github.com/settings/installations/30423517` がsudo re-authenticationを要求。画面上の選択肢はpasskey、GitHub Mobile、authenticator app、password。資格情報の入力はユーザーに引き継ぐ。
-- Render GitHub Appの権限追加はまだ保存していない。再認証後に対象repoだけを選び、他repoのアクセスは許可しない。
-- Renderのprivate repo取得はこの権限設定まで保留。DB作成、Aiven network変更、Render deploy/env登録も未実施。
+- 上記GitHub App設定は再認証済みで、現状 `All repositories`。新たな認証や権限変更を要求せず、MCPで再試行する。
+- 2026-09-30のRender Overview画像には `extended tic tac toe` (Suspended) のみ表示されている。この既存サービスは今回のToDoアプリとは別物。Render MCPでもToDo用serviceはなく、Aiven/RenderのDB・network・env変更や本番deployも未実施。
+- Aiven service listをRenderのworkspace IDで問い合わせたところ404だった。これはAiven project名とRender workspace IDを混同したためなので、Aiven project一覧から正しいprojectを特定してから続行する。
 - 再開後は[Render git provider設定](https://render.com/docs/git-provider)のRepository accessを確認し、通常Outbound CIDR（region内共有）をAiven `ip_filter`へ設定する。Free構成では有料Dedicated IPを作成しない。
 - Aiven project CAをTLS接続で検証する。CA rotationを含む[公式TLS資料](https://aiven.io/docs/platform/concepts/tls-ssl-certificates)を確認した。
+- ユーザーはRender GitHub Appの再認証を既に完了したと報告。添付画面はRender DashboardのOverviewなので、private repoが接続可能になったかMCP create要求で再確認する。新たな許可要求は出さない。
 
 ## 更新履歴
 
