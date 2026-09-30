@@ -33,13 +33,15 @@ TERAKOYA「18章 Herokuにアプリをデプロイしよう」と「ToDoアプ�
 6. 公式資料ではRender Web ServiceのOutbound rangesをサービス詳細から取得でき、Aiven MySQLのIP filterへCIDRで設定できることを確認。アプリ作成後、Renderの実際のOutbound rangesを取得してallowlistを絞る。
 7. GitHubへ登録予定の5ファイルに対するローカルの秘密値パターンスキャンは一致なし。`.env`は追跡外。`git diff --check`成功。frontend/backendのproduction build成功。
 8. GitHubに `itsuki-jp/react-nodejs-todo-app` をprivateで作成し、remote `origin` を設定。GitHub API readbackでvisibility=`PRIVATE`を確認。
-9. stage対象は `backend/src/app.ts`、`backend/src/db.ts`、`RENDER_DEPLOYMENT_PLAN.md`、`RENDER_AIVEN_DEPLOYMENT_GUIDE.md`、`DEPLOYMENT_RUNBOOK.md` の5件のみ。既存の未追跡Markdown 2件はstageしていない。commit/push前。
+9. stage対象は `backend/src/app.ts`、`backend/src/db.ts`、`RENDER_DEPLOYMENT_PLAN.md`、`RENDER_AIVEN_DEPLOYMENT_GUIDE.md`、`DEPLOYMENT_RUNBOOK.md` の5件のみ。既存の未追跡Markdown 2件はstageしていない。commit対象とstage内容の一致を確認済み。
+10. private repoの作成と初回push完了。commit `0dde843` を `origin/main` へpush。GitHub repo visibilityはPRIVATE。
+11. Render MCPのcreate要求は`.git`あり/なし双方のURLでHTTP 400 `invalid or unfetchable`となり、serviceは作られなかった。Render公式資料に従い、Render GitHub AppのRepository accessに対象private repoを加える必要があると判断。権限変更前に対象repoのみの許可画面を確認し、ユーザー承認を得る。
 
 ### 次に実行する手順
 
 1. 対象ファイルだけを秘密情報スキャンし、stage対象を確定する。
-2. private GitHub repoを作成し、対象ファイルをstage/commit/pushする。push後にrepoのvisibilityを再確認する。
-3. Render Web Serviceを作成し、Build=`npm run heroku-postbuild`、Start=`npm start`、region/network情報を記録する。
+2. private GitHub repoを作成し、対象ファイルをstage/commit/pushする。push後にrepoのvisibilityを再確認する（完了）。
+3. Render GitHub Appが対象private repoを読めるように、Repository accessをこのrepoのみに限定して接続する。Render Web Serviceを作成し、Build=`npm run heroku-postbuild`、Start=`npm start`、region/network情報を記録する。
 4. Render serviceのOutbound CIDRを取得し、Aiven MySQLの `ip_filter` をそのCIDRに絞る。適用後の値を読み返す。
 5. AivenのDB・アプリ専用user・権限を準備し、Renderの環境変数/CA Secret Fileへ秘密値を登録する。秘密値自体はこの記録に残さない。
 6. deploy後にbuild/log、HTTPS画面、auth、ToDo CRUD、ユーザー間分離、DB/TLS疎通を検証し、結果を逐次追記する。
