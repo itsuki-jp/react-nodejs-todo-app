@@ -1,0 +1,48 @@
+name: Keepalive
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    env:
+      KEEPALIVE_EMAIL: ${{ secrets.KEEPALIVE_EMAIL }}
+      KEEPALIVE_PASSWORD: ${{ secrets.KEEPALIVE_PASSWORD }}
+    steps:
+      - name: Call login API
+        run: |
+          # 目的: Aiven MySQLへの定期アクセス。存在しない架空アカウントでよく、
+          # バリデーション通過→SELECT実行→401返却まで届けば成功(DB到達の証明)。
+          # 401 = DB到達(成功)、200 = 実在アカウントでログイン成功(成功)、
+          # 400 = リクエスト不正(失敗)、500 = DBエラー(失敗)、000 = 接続失敗(再試行)。
+          # 注意: KEEPALIVE_PASSWORDは8文字以上にすること(未満だと400になる)。
+          BODY=$(jq -n --arg e "$KEEPALIVE_EMAIL" --arg p "$KEEPALIVE_PASSWORD" '{email:$e,password:$p}')
+
+          for i in 1 2 3; do
+            CODE=$(curl -s -o /tmp/resp.txt -w "%{http_code}" \
+              --max-time 120 \
+              -X POST "${{ secrets.APP_URL }}/api/auth/login" \
+              -H "Content-Type: application/json" \
+              -d "$BODY") || CODE="000"
+            echo "Attempt $i: HTTP $CODE"
+            cat /tmp/resp.txt; echo
+
+            if [ "$CODE" = "401" ] || [ "$CODE" = "200" ]; then
+              echo "Keepalive successful (HTTP $CODE = DB reached)"
+              exit 0
+            fi
+
+            if [ "$CODE" = "400" ] || [ "$CODE" = "500" ]; then
+              echo "Keepalive failed (HTTP $CODE)"
+              exit 1
+            fi
+
+            echo "Transient failure (HTTP $CODE), waiting 60s before retry..."
+            sleep 60
+          done
+
+          echo "Keepalive failed after 3 attempts"
+          exit 1
