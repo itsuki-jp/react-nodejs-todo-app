@@ -17,14 +17,17 @@ jobs:
           # 目的: Aiven MySQLへの定期アクセス。存在しない架空アカウントでよく、
           # バリデーション通過→SELECT実行→401返却まで届けば成功(DB到達の証明)。
           # 401 = DB到達(成功)、200 = 実在アカウントでログイン成功(成功)、
-          # 400 = リクエスト不正(失敗)、500 = DBエラー(失敗)、000 = 接続失敗(再試行)。
+          # 400/404 = リクエスト不正(失敗・再試行なし)、500 = DBエラー(失敗)、000 = 接続失敗(再試行)。
           # 注意: KEEPALIVE_PASSWORDは8文字以上にすること(未満だと400になる)。
+          # APP_URLの末尾スラッシュ有無を吸収する。
+          APP_URL="${{ secrets.APP_URL }}"
+          APP_URL="${APP_URL%/}"
           BODY=$(jq -n --arg e "$KEEPALIVE_EMAIL" --arg p "$KEEPALIVE_PASSWORD" '{email:$e,password:$p}')
 
           for i in 1 2 3; do
             CODE=$(curl -s -o /tmp/resp.txt -w "%{http_code}" \
               --max-time 120 \
-              -X POST "${{ secrets.APP_URL }}/api/auth/login" \
+              -X POST "$APP_URL/api/auth/login" \
               -H "Content-Type: application/json" \
               -d "$BODY") || CODE="000"
             echo "Attempt $i: HTTP $CODE"
@@ -35,7 +38,7 @@ jobs:
               exit 0
             fi
 
-            if [ "$CODE" = "400" ] || [ "$CODE" = "500" ]; then
+            if [ "$CODE" = "400" ] || [ "$CODE" = "404" ] || [ "$CODE" = "500" ]; then
               echo "Keepalive failed (HTTP $CODE)"
               exit 1
             fi
